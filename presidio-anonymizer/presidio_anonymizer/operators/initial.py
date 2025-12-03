@@ -1,6 +1,7 @@
 """Converts PII text to initials."""
 
 from typing import Dict
+import re
 
 from presidio_anonymizer.operators import Operator, OperatorType
 
@@ -10,58 +11,39 @@ class Initial(Operator):
 
     def operate(self, text: str = None, params: Dict = None) -> str:
         """
-        Convert a string like 'John Smith' into 'J. S.'.
-        This is a basic version; we'll improve it in later tasks.
+        Convert text to initials.
+
+        Examples:
+        - "John Smith" -> "J. S."
+        - "     Eastern    Michigan   University " -> "E. M. U."
+        - "@abc" -> "@A."
+        - "@843A" -> "@8."
+        - "--**abc" -> "--**A."
         """
         if text is None:
             return ""
 
-        # 1. Strip leading/trailing whitespace
         stripped = text.strip()
-
         if not stripped:
             return stripped
 
-        # 2. Split on whitespace to get words
-        words = stripped.split()
+        # Split into chunks separated by whitespace
+        chunks = stripped.split()
+        result_chunks = []
 
-        # 3. Take the first character of each word and format as "X."
-        initials_parts = []
-        for w in words:
-            if not w:
-                continue
-            first_char = w[0]
-            initials_parts.append(f"{first_char.upper()}.")
+        for chunk in chunks:
+            # Match optional non-word prefix and then a word part
+            match = re.match(r"(\W*)(\w+)", chunk)
+            if match:
+                prefix = match.group(1)
+                word_part = match.group(2)
+                first_char = word_part[0].upper()
+                result_chunks.append(f"{prefix}{first_char}.")
+            else:
+                # No alphanumeric content, keep chunk as-is
+                result_chunks.append(chunk)
 
-        # 4. Join with spaces: "J." "S." -> "J. S."
-        return " ".join(initials_parts)
-    def operate(self, text: str = None, params: Dict = None) -> str:
-        """
-        Convert a string like 'John Smith' into 'J. S.'.
-        This is a basic version; we'll improve it in later tasks.
-        """
-        if text is None:
-            return ""
-
-        # 1. Strip leading/trailing whitespace
-        stripped = text.strip()
-
-        if not stripped:
-            return stripped
-
-        # 2. Split on whitespace to get words
-        words = stripped.split()
-
-        # 3. Take the first character of each word and format as "X."
-        initials_parts = []
-        for w in words:
-            if not w:
-                continue
-            first_char = w[0]
-            initials_parts.append(f"{first_char.upper()}.")
-
-        # 4. Join with spaces: "J." "S." -> "J. S."
-        return " ".join(initials_parts)
+        return " ".join(result_chunks)
 
 
     def validate(self, params: Dict = None) -> None:
